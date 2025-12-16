@@ -29,8 +29,8 @@
 
 <script>
 let total = 0;
-let count = { A: 0, B: 0, C: 0 };
-const ratio = { A: 3, B: 2, C: 2 };
+let count = { Mark: 0, Galen: 0, Kevin: 0 };
+const ratio = { Mark: 3, Galen: 2, Kevin: 2 };
 const ratioSum = 7;
 let logData = [];
 
@@ -41,7 +41,7 @@ function loadData() {
     try {
       const data = JSON.parse(saved);
       total = data.total || 0;
-      count = data.count || { A:0, B:0, C:0 };
+      count = data.count || { Mark:0, Galen:0, Kevin:0 };
       logData = Array.isArray(data.log) ? data.log : [];
       renderLog();
       updateStatus();
@@ -71,29 +71,29 @@ function allocate() {
     return;
   }
 
-  let weekAlloc = { A: 0, B: 0, C: 0 };
-  let weekCodes = { A: [], B: [], C: [] };
+  let weekAlloc = { Mark: 0, Galen: 0, Kevin: 0 };
+  let weekCodes = { Mark: [], Galen: [], Kevin: [] };
+  const members = ['Mark','Galen','Kevin'];
 
   for (let i = 0; i < n; i++) {
     total++;
 
     let should = {
-      A: total * ratio.A / ratioSum,
-      B: total * ratio.B / ratioSum,
-      C: total * ratio.C / ratioSum
+      Mark: total * ratio.Mark / ratioSum,
+      Galen: total * ratio.Galen / ratioSum,
+      Kevin: total * ratio.Kevin / ratioSum
     };
 
     let need = {
-      A: should.A - count.A,
-      B: should.B - count.B,
-      C: should.C - count.C
+      Mark: should.Mark - count.Mark,
+      Galen: should.Galen - count.Galen,
+      Kevin: should.Kevin - count.Kevin
     };
 
     let target = Object.keys(need).reduce((a,b)=>need[a]>need[b]?a:b);
 
     if (need[target] <= 0) {
-      const r = ['A','B','C'];
-      target = r[Math.floor(Math.random()*3)];
+      target = members[Math.floor(Math.random()*3)];
     }
 
     count[target]++;
@@ -124,22 +124,22 @@ function renderLog() {
     logDiv.innerHTML +=
       `<div>
         分配日期：${w.date} （${w.n} 件）<br/>
-        A：${w.alloc.A} 件 ${w.codes.A.length ? '→ ['+w.codes.A.join(', ')+']' : ''}<br/>
-        B：${w.alloc.B} 件 ${w.codes.B.length ? '→ ['+w.codes.B.join(', ')+']' : ''}<br/>
-        C：${w.alloc.C} 件 ${w.codes.C.length ? '→ ['+w.codes.C.join(', ')+']' : ''}
+        Mark：${w.alloc.Mark} 件 ${w.codes.Mark.length ? '→ ['+w.codes.Mark.join(', ')+']' : ''}<br/>
+        Galen：${w.alloc.Galen} 件 ${w.codes.Galen.length ? '→ ['+w.codes.Galen.join(', ')+']' : ''}<br/>
+        Kevin：${w.alloc.Kevin} 件 ${w.codes.Kevin.length ? '→ ['+w.codes.Kevin.join(', ')+']' : ''}
       </div><hr/>`;
   });
 }
 
 function updateStatus() {
   document.getElementById('status').innerHTML =
-    `累積案件 ${total} 件<br>A:${count.A} B:${count.B} C:${count.C}`;
+    `累積案件 ${total} 件<br>Mark:${count.Mark} Galen:${count.Galen} Kevin:${count.Kevin}`;
 }
 
 function resetAll() {
   if (!confirm('確定要全部重置嗎？')) return;
   total = 0;
-  count = { A:0, B:0, C:0 };
+  count = { Mark:0, Galen:0, Kevin:0 };
   logData = [];
   localStorage.removeItem('caseAllocatorData');
   renderLog();
