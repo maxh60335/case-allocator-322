@@ -21,11 +21,10 @@
     <h3>案件抽分系統（3:2:2）</h3>
 
     <input id="codes" type="text"
-      placeholder="輸入 8 碼暗號，用逗點分隔（可留空）"
+      placeholder="輸入 8 碼暗號，用逗號分隔（可留空）"
       style="width:100%" />
     <br/><br/>
 
-    <!-- 單一抽案件按鈕 -->
     <button onclick="allocate()">抽</button>
     <button onclick="resetAll()">全部重置</button>
 
@@ -37,7 +36,7 @@
   <div class="section">
     <h3>暗號輪流分配系統</h3>
     <input id="rotCodes" type="text"
-      placeholder="輸入暗號，用逗點分隔"
+      placeholder="輸入暗號，用逗號分隔"
       style="width:100%" />
     <br/><br/>
     <button onclick="allocateRot()">分配暗號</button>
@@ -55,7 +54,7 @@ const ratio = { Mark:3, Galen:2, Kevin:2 };
 const ratioSum = 7;
 let logData = [];
 
-const FIXED_CASES = 5; // 每次抽固定 5 件，可自行修改
+const FIXED_CASES = 5; // 預設抽件數，如果沒輸入暗號使用
 
 function loadData() {
   const saved = localStorage.getItem('caseAllocatorData');
@@ -90,9 +89,9 @@ function saveData() {
 }
 
 function allocate() {
-  const n = FIXED_CASES;
   const codeInput = document.getElementById('codes').value.trim();
   let codes = codeInput ? codeInput.split(',').map(c=>c.trim()) : [];
+  const n = codes.length > 0 ? codes.length : FIXED_CASES; // 使用暗號數量作為件數
 
   let weekAlloc = { Mark:0, Galen:0, Kevin:0 };
   let weekCodes = { Mark:[], Galen:[], Kevin:[] };
@@ -114,7 +113,7 @@ function allocate() {
     if (need[target]<=0) target = members[Math.floor(Math.random()*3)];
     count[target]++;
     weekAlloc[target]++;
-    if (codes[i]) weekCodes[target].push(codes[i]); // 只分配存在的暗號
+    if (codes[i]) weekCodes[target].push(codes[i]);
   }
 
   const today = new Date();
@@ -122,7 +121,7 @@ function allocate() {
 
   logData.push({
     date: dateString,
-    n,
+    n, // 這裡 n = 暗號數量或固定件數
     alloc: weekAlloc,
     codes: weekCodes
   });
@@ -130,6 +129,8 @@ function allocate() {
   renderLog();
   updateStatus();
   saveData();
+
+  document.getElementById('codes').value = ''; // 抽完自動清空
 }
 
 function renderLog() {
