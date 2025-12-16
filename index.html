@@ -21,11 +21,11 @@
     <h3>案件抽分系統（3:2:2）</h3>
 
     <input id="codes" type="text"
-      placeholder="輸入 8 碼暗號，用逗點分隔"
+      placeholder="輸入 8 碼暗號，用逗點分隔（可留空）"
       style="width:100%" />
     <br/><br/>
 
-    <!-- 改成按鈕直接抽案件 -->
+    <!-- 按鈕抽案件，不需要輸入案件數 -->
     <button onclick="allocate(5)">抽 5 件</button>
     <button onclick="allocate(6)">抽 6 件</button>
     <button onclick="allocate(7)">抽 7 件</button>
@@ -94,9 +94,6 @@ function allocate(n) {
   const codeInput = document.getElementById('codes').value.trim();
   let codes = codeInput ? codeInput.split(',').map(c=>c.trim()) : [];
 
-  if (!n) return;
-  if (codes.length && codes.length!==n) { alert('暗號數量需與案件數一致'); return; }
-
   let weekAlloc = { Mark:0, Galen:0, Kevin:0 };
   let weekCodes = { Mark:[], Galen:[], Kevin:[] };
   const members = ['Mark','Galen','Kevin'];
@@ -117,7 +114,7 @@ function allocate(n) {
     if (need[target]<=0) target = members[Math.floor(Math.random()*3)];
     count[target]++;
     weekAlloc[target]++;
-    if (codes.length) weekCodes[target].push(codes[i]);
+    if (codes[i]) weekCodes[target].push(codes[i]); // 只分配存在的暗號
   }
 
   const today = new Date();
