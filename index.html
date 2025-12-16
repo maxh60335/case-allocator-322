@@ -30,7 +30,6 @@
 <script>
 let total = 0;
 let count = { A: 0, B: 0, C: 0 };
-let week = 0;
 const ratio = { A: 3, B: 2, C: 2 };
 const ratioSum = 7;
 let logData = [];
@@ -43,7 +42,6 @@ function loadData() {
       const data = JSON.parse(saved);
       total = data.total || 0;
       count = data.count || { A:0, B:0, C:0 };
-      week = data.week || 0;
       logData = Array.isArray(data.log) ? data.log : [];
       renderLog();
       updateStatus();
@@ -58,7 +56,6 @@ function saveData() {
   localStorage.setItem('caseAllocatorData', JSON.stringify({
     total,
     count,
-    week,
     log: logData
   }));
 }
@@ -104,9 +101,11 @@ function allocate() {
     if (codes.length) weekCodes[target].push(codes[i]);
   }
 
-  week++;
+  const today = new Date();
+  const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
   const weekEntry = {
-    week,
+    date: dateString,
     n,
     alloc: weekAlloc,
     codes: weekCodes
@@ -124,7 +123,7 @@ function renderLog() {
   logData.forEach(w => {
     logDiv.innerHTML +=
       `<div>
-        第 ${w.week} 週（${w.n} 件）<br/>
+        分配日期：${w.date} （${w.n} 件）<br/>
         A：${w.alloc.A} 件 ${w.codes.A.length ? '→ ['+w.codes.A.join(', ')+']' : ''}<br/>
         B：${w.alloc.B} 件 ${w.codes.B.length ? '→ ['+w.codes.B.join(', ')+']' : ''}<br/>
         C：${w.alloc.C} 件 ${w.codes.C.length ? '→ ['+w.codes.C.join(', ')+']' : ''}
@@ -141,7 +140,6 @@ function resetAll() {
   if (!confirm('確定要全部重置嗎？')) return;
   total = 0;
   count = { A:0, B:0, C:0 };
-  week = 0;
   logData = [];
   localStorage.removeItem('caseAllocatorData');
   renderLog();
