@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>每週案件抽分系統（3:2:2）</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 8px 12px; }
+    .card { border: 1px solid #ccc; padding: 12px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<h2>每週案件抽分系統（3:2:2）</h2>
+
+<div>
+  <input id="cases" type="number" placeholder="本週案件數" />
+  <button onclick="allocate()">抽案件</button>
+  <button onclick="resetAll()">全部重置</button>
+</div>
+
+<div class="card" id="status"></div>
+<div class="card" id="log"></div>
+
+<script>
+let total = 0;
+let count = { A: 0, B: 0, C: 0 };
+let week = 0;
+const ratio = { A: 3, B: 2, C: 2 };
+const ratioSum = 7;
+
+function allocate() {
+  const n = parseInt(document.getElementById('cases').value);
+  if (!n) return;
+
+  let weekAlloc = { A: 0, B: 0, C: 0 };
+
+  for (let i = 0; i < n; i++) {
+    total++;
+    let should = {
+      A: total * ratio.A / ratioSum,
+      B: total * ratio.B / ratioSum,
+      C: total * ratio.C / ratioSum
+    };
+    let need = {
+      A: should.A - count.A,
+      B: should.B - count.B,
+      C: should.C - count.C
+    };
+
+    let target = Object.keys(need).reduce((a,b)=>need[a]>need[b]?a:b);
+    if (need[target] <= 0) {
+      const r = ['A','B','C'];
+      target = r[Math.floor(Math.random()*3)];
+    }
+
+    count[target]++;
+    weekAlloc[target]++;
+  }
+
+  week++;
+  document.getElementById('log').innerHTML +=
+    `<div>第 ${week} 週（${n} 件） → A:${weekAlloc.A} B:${weekAlloc.B} C:${weekAlloc.C}</div>`;
+
+  updateStatus();
+}
+
+function updateStatus() {
+  document.getElementById('status').innerHTML =
+    `累積案件 ${total} 件<br>A:${count.A} B:${count.B} C:${count.C}`;
+}
+
+function resetAll() {
+  total = 0;
+  count = { A:0, B:0, C:0 };
+  week = 0;
+  document.getElementById('log').innerHTML = '';
+  updateStatus();
+}
+
+updateStatus();
+</script>
+
+</body>
+</html>
