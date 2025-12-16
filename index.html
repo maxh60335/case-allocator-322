@@ -33,6 +33,35 @@ let count = { A: 0, B: 0, C: 0 };
 let week = 0;
 const ratio = { A: 3, B: 2, C: 2 };
 const ratioSum = 7;
+let logData = [];
+
+// 讀取 localStorage
+function loadData() {
+  const saved = localStorage.getItem('caseAllocatorData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      total = data.total || 0;
+      count = data.count || { A:0, B:0, C:0 };
+      week = data.week || 0;
+      logData = Array.isArray(data.log) ? data.log : [];
+      renderLog();
+      updateStatus();
+    } catch(e) {
+      console.log('localStorage 解析錯誤，忽略資料');
+    }
+  }
+}
+
+// 存檔 localStorage
+function saveData() {
+  localStorage.setItem('caseAllocatorData', JSON.stringify({
+    total,
+    count,
+    week,
+    log: logData
+  }));
+}
 
 function allocate() {
   const n = parseInt(document.getElementById('cases').value);
@@ -76,15 +105,31 @@ function allocate() {
   }
 
   week++;
-  document.getElementById('log').innerHTML +=
-    `<div>
-      第 ${week} 週（${n} 件）<br/>
-      A：${weekAlloc.A} 件 ${weekCodes.A.length ? '→ ['+weekCodes.A.join(', ')+']' : ''}<br/>
-      B：${weekAlloc.B} 件 ${weekCodes.B.length ? '→ ['+weekCodes.B.join(', ')+']' : ''}<br/>
-      C：${weekAlloc.C} 件 ${weekCodes.C.length ? '→ ['+weekCodes.C.join(', ')+']' : ''}
-    </div><hr/>`;
+  const weekEntry = {
+    week,
+    n,
+    alloc: weekAlloc,
+    codes: weekCodes
+  };
+  logData.push(weekEntry);
 
+  renderLog();
   updateStatus();
+  saveData(); // 存檔
+}
+
+function renderLog() {
+  const logDiv = document.getElementById('log');
+  logDiv.innerHTML = '';
+  logData.forEach(w => {
+    logDiv.innerHTML +=
+      `<div>
+        第 ${w.week} 週（${w.n} 件）<br/>
+        A：${w.alloc.A} 件 ${w.codes.A.length ? '→ ['+w.codes.A.join(', ')+']' : ''}<br/>
+        B：${w.alloc.B} 件 ${w.codes.B.length ? '→ ['+w.codes.B.join(', ')+']' : ''}<br/>
+        C：${w.alloc.C} 件 ${w.codes.C.length ? '→ ['+w.codes.C.join(', ')+']' : ''}
+      </div><hr/>`;
+  });
 }
 
 function updateStatus() {
@@ -93,14 +138,17 @@ function updateStatus() {
 }
 
 function resetAll() {
+  if (!confirm('確定要全部重置嗎？')) return;
   total = 0;
   count = { A:0, B:0, C:0 };
   week = 0;
-  document.getElementById('log').innerHTML = '';
+  logData = [];
+  localStorage.removeItem('caseAllocatorData');
+  renderLog();
   updateStatus();
 }
 
-updateStatus();
+loadData(); // 初始化時讀取
 </script>
 
 </body>
