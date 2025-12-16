@@ -1,14 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>案件抽分 + 暗號輪流分配系統</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 8px 12px; }
+    .container { display: flex; gap: 20px; }
+    .card { border: 1px solid #ccc; padding: 12px; margin-top: 12px; width: 100%; }
+    .section { flex: 1; }
+  </style>
+</head>
+<body>
+
+<h2>案件抽分系統 & 暗號輪流分配系統</h2>
+
+<div class="container">
+  <!-- 左邊：案件抽分系統 -->
+  <div class="section">
+    <h3>案件抽分系統（3:2:2）</h3>
+
+    <input id="codes" type="text"
+      placeholder="輸入 8 碼暗號，用逗號分隔（可留空）"
+      style="width:100%" />
+    <br/><br/>
+
+    <button onclick="allocate()">抽</button>
+    <button onclick="resetAll()">全部重置</button>
+
+    <div class="card" id="status"></div>
+    <div class="card" id="log"></div>
+  </div>
+
+  <!-- 右邊：暗號輪流分配系統 -->
+  <div class="section">
+    <h3>暗號輪流分配系統</h3>
+    <input id="rotCodes" type="text"
+      placeholder="輸入暗號，用逗號分隔"
+      style="width:100%" />
+    <br/><br/>
+    <button onclick="allocateRot()">分配暗號</button>
+    <button onclick="resetRot()">重置輪流分配</button>
+
+    <div class="card" id="rotLog"></div>
+  </div>
+</div>
+
 <script>
 // ---------------------- 左邊案件抽分 ----------------------
-function allocate() {
-  const codeInput = document.getElementById('codes').value.trim();
-  if (!codeInput) { // 防呆：空白不執行
-    alert('請輸入至少一個暗號再抽分');
-    return;
+let total = 0;
+let count = { Mark:0, Galen:0, Kevin:0 };
+const ratio = { Mark:3, Galen:2, Kevin:2 };
+const ratioSum = 7;
+let logData = [];
+
+const FIXED_CASES = 5; // 預設抽件數，如果沒輸入暗號使用
+
+function loadData() {
+  const saved = localStorage.getItem('caseAllocatorData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      total = data.total || 0;
+      count = data.count || { Mark:0, Galen:0, Kevin:0 };
+      logData = Array.isArray(data.log) ? data.log : [];
+      renderLog();
+      updateStatus();
+    } catch(e) { console.log('localStorage 解析錯誤'); }
   }
 
-  let codes = codeInput.split(',').map(c=>c.trim());
-  const n = codes.length; // 件數依輸入暗號數量
+  const savedRot = localStorage.getItem('rotatorData');
+  if (savedRot) {
+    try {
+      const data = JSON.parse(savedRot);
+      rotLogData = Array.isArray(data.log) ? data.log : [];
+      rotIndex = typeof data.nextIndex === 'number' ? data.nextIndex : 0;
+      renderRotLog();
+    } catch(e){ console.log('輪流分配 localStorage 錯誤'); }
+  }
+}
+
+function saveData() {
+  localStorage.setItem('caseAllocatorData', JSON.stringify({
+    total,
+    count,
+    log: logData
+  }));
+}
+
+function allocate() {
+  const codeInput = document.getElementById('codes').value.trim();
+  let codes = codeInput ? codeInput.split(',').map(c=>c.trim()) : [];
+  const n = codes.length > 0 ? codes.length : FIXED_CASES; // 使用暗號數量作為件數
 
   let weekAlloc = { Mark:0, Galen:0, Kevin:0 };
   let weekCodes = { Mark:[], Galen:[], Kevin:[] };
@@ -30,7 +113,7 @@ function allocate() {
     if (need[target]<=0) target = members[Math.floor(Math.random()*3)];
     count[target]++;
     weekAlloc[target]++;
-    weekCodes[target].push(codes[i]);
+    if (codes[i]) weekCodes[target].push(codes[i]);
   }
 
   const today = new Date();
@@ -38,7 +121,7 @@ function allocate() {
 
   logData.push({
     date: dateString,
-    n,
+    n, // 這裡 n = 暗號數量或固定件數
     alloc: weekAlloc,
     codes: weekCodes
   });
@@ -47,6 +130,84 @@ function allocate() {
   updateStatus();
   saveData();
 
-  document.getElementById('codes').value = '';
+  document.getElementById('codes').value = ''; // 抽完自動清空
 }
+
+function renderLog() {
+  const logDiv = document.getElementById('log');
+  logDiv.innerHTML = '';
+  logData.forEach(w=>{
+    logDiv.innerHTML +=
+      `<div>
+        分配日期：${w.date} （${w.n} 件）<br/>
+        Mark：${w.alloc.Mark} 件 ${w.codes.Mark.length ? '→ ['+w.codes.Mark.join(', ')+']' : ''}<br/>
+        Galen：${w.alloc.Galen} 件 ${w.codes.Galen.length ? '→ ['+w.codes.Galen.join(', ')+']' : ''}<br/>
+        Kevin：${w.alloc.Kevin} 件 ${w.codes.Kevin.length ? '→ ['+w.codes.Kevin.join(', ')+']' : ''}
+      </div><hr/>`;
+  });
+}
+
+function updateStatus() {
+  document.getElementById('status').innerHTML =
+    `累積案件 ${total} 件<br>Mark:${count.Mark} Galen:${count.Galen} Kevin:${count.Kevin}`;
+}
+
+function resetAll() {
+  if (!confirm('確定要全部重置嗎？')) return;
+  total=0; count={Mark:0,Galen:0,Kevin:0}; logData=[];
+  localStorage.removeItem('caseAllocatorData');
+  renderLog(); updateStatus();
+}
+
+// ---------------------- 右邊輪流分配 ----------------------
+let rotLogData = [];
+let rotIndex = 0; // 下一個分配的成員索引
+const rotMembers = ['Mark','Galen','Kevin'];
+
+function allocateRot() {
+  const codeInput = document.getElementById('rotCodes').value.trim();
+  if (!codeInput) return;
+  let codes = codeInput.split(',').map(c=>c.trim());
+  const today = new Date();
+  const dateString = today.toISOString().split('T')[0];
+
+  codes.forEach(code=>{
+    const member = rotMembers[rotIndex % rotMembers.length];
+    rotLogData.push({ date: dateString, member, code });
+    rotIndex++;
+  });
+
+  renderRotLog();
+  saveRotData();
+  document.getElementById('rotCodes').value = '';
+}
+
+function renderRotLog() {
+  const logDiv = document.getElementById('rotLog');
+  logDiv.innerHTML = '';
+  rotLogData.forEach(entry=>{
+    logDiv.innerHTML += `<div>${entry.date} → ${entry.member}: ${entry.code}</div>`;
+  });
+}
+
+function saveRotData() {
+  localStorage.setItem('rotatorData', JSON.stringify({
+    log: rotLogData,
+    nextIndex: rotIndex
+  }));
+}
+
+function resetRot() {
+  if (!confirm('確定要重置輪流分配嗎？')) return;
+  rotLogData=[]; rotIndex=0;
+  localStorage.removeItem('rotatorData');
+  renderRotLog();
+}
+
+// 初始化
+loadData();
+
 </script>
+
+</body>
+</html>
