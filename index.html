@@ -15,6 +15,11 @@
 
 <div>
   <input id="cases" type="number" placeholder="本週案件數" />
+  <br/><br/>
+  <input id="codes" type="text"
+    placeholder="輸入 8 碼暗號，用逗點分隔（例：12345678,87654321）"
+    style="width:100%" />
+  <br/><br/>
   <button onclick="allocate()">抽案件</button>
   <button onclick="resetAll()">全部重置</button>
 </div>
@@ -31,17 +36,27 @@ const ratioSum = 7;
 
 function allocate() {
   const n = parseInt(document.getElementById('cases').value);
+  const codeInput = document.getElementById('codes').value.trim();
+  let codes = codeInput ? codeInput.split(',').map(c => c.trim()) : [];
+
   if (!n) return;
+  if (codes.length && codes.length !== n) {
+    alert('暗號數量需與案件數一致');
+    return;
+  }
 
   let weekAlloc = { A: 0, B: 0, C: 0 };
+  let weekCodes = { A: [], B: [], C: [] };
 
   for (let i = 0; i < n; i++) {
     total++;
+
     let should = {
       A: total * ratio.A / ratioSum,
       B: total * ratio.B / ratioSum,
       C: total * ratio.C / ratioSum
     };
+
     let need = {
       A: should.A - count.A,
       B: should.B - count.B,
@@ -49,6 +64,7 @@ function allocate() {
     };
 
     let target = Object.keys(need).reduce((a,b)=>need[a]>need[b]?a:b);
+
     if (need[target] <= 0) {
       const r = ['A','B','C'];
       target = r[Math.floor(Math.random()*3)];
@@ -56,11 +72,17 @@ function allocate() {
 
     count[target]++;
     weekAlloc[target]++;
+    if (codes.length) weekCodes[target].push(codes[i]);
   }
 
   week++;
   document.getElementById('log').innerHTML +=
-    `<div>第 ${week} 週（${n} 件） → A:${weekAlloc.A} B:${weekAlloc.B} C:${weekAlloc.C}</div>`;
+    `<div>
+      第 ${week} 週（${n} 件）<br/>
+      A：${weekAlloc.A} 件 ${weekCodes.A.length ? '→ ['+weekCodes.A.join(', ')+']' : ''}<br/>
+      B：${weekAlloc.B} 件 ${weekCodes.B.length ? '→ ['+weekCodes.B.join(', ')+']' : ''}<br/>
+      C：${weekAlloc.C} 件 ${weekCodes.C.length ? '→ ['+weekCodes.C.join(', ')+']' : ''}
+    </div><hr/>`;
 
   updateStatus();
 }
