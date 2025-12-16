@@ -19,13 +19,17 @@
   <!-- 左邊：案件抽分系統 -->
   <div class="section">
     <h3>案件抽分系統（3:2:2）</h3>
-    <input id="cases" type="number" placeholder="本週案件數" />
-    <br/><br/>
+
     <input id="codes" type="text"
       placeholder="輸入 8 碼暗號，用逗點分隔"
       style="width:100%" />
     <br/><br/>
-    <button onclick="allocate()">抽案件</button>
+
+    <!-- 改成按鈕直接抽案件 -->
+    <button onclick="allocate(5)">抽 5 件</button>
+    <button onclick="allocate(6)">抽 6 件</button>
+    <button onclick="allocate(7)">抽 7 件</button>
+    <button onclick="allocate(8)">抽 8 件</button>
     <button onclick="resetAll()">全部重置</button>
 
     <div class="card" id="status"></div>
@@ -67,7 +71,6 @@ function loadData() {
     } catch(e) { console.log('localStorage 解析錯誤'); }
   }
 
-  // 讀取右邊輪流分配資料
   const savedRot = localStorage.getItem('rotatorData');
   if (savedRot) {
     try {
@@ -79,7 +82,6 @@ function loadData() {
   }
 }
 
-// 存左邊
 function saveData() {
   localStorage.setItem('caseAllocatorData', JSON.stringify({
     total,
@@ -88,8 +90,7 @@ function saveData() {
   }));
 }
 
-function allocate() {
-  const n = parseInt(document.getElementById('cases').value);
+function allocate(n) {
   const codeInput = document.getElementById('codes').value.trim();
   let codes = codeInput ? codeInput.split(',').map(c=>c.trim()) : [];
 
