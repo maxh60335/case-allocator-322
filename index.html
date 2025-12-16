@@ -3,11 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function CaseAllocator() {
-  const saved = JSON.parse(localStorage.getItem("caseAllocatorData") || "{}");
+  // 嘗試讀取 localStorage，如果格式錯誤自動恢復空狀態
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem("caseAllocatorData") || "{}");
+  } catch (e) {
+    saved = {};
+  }
 
   const [total, setTotal] = useState(saved.total || 0);
   const [counts, setCounts] = useState(saved.counts || { A: 0, B: 0, C: 0 });
-  const [log, setLog] = useState(saved.log || []);
+  const [log, setLog] = useState(Array.isArray(saved.log) ? saved.log : []);
 
   const ratios = { A: 3, B: 2, C: 2 };
   const ratioSum = 7;
@@ -67,6 +73,15 @@ export default function CaseAllocator() {
     ]);
   };
 
+  const resetAll = () => {
+    if (confirm("確定要重置所有紀錄嗎？")) {
+      setTotal(0);
+      setCounts({ A: 0, B: 0, C: 0 });
+      setLog([]);
+      localStorage.removeItem("caseAllocatorData");
+    }
+  };
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-4">
       <h1 className="text-2xl font-bold">每週案件抽分系統（3:2:2）</h1>
@@ -79,6 +94,9 @@ export default function CaseAllocator() {
                 抽 {n} 件
               </Button>
             ))}
+            <Button variant="destructive" onClick={resetAll}>
+              重置所有紀錄
+            </Button>
           </div>
           <div className="text-sm">
             累積案件：{total}｜ A：{counts.A} B：{counts.B} C：{counts.C}
@@ -90,7 +108,9 @@ export default function CaseAllocator() {
         <CardContent className="pt-4 space-y-2">
           {log.map((w) => (
             <div key={w.week} className="border-b pb-2">
-              <div className="font-semibold">第 {w.week} 週（{w.cases} 件） - {w.date}</div>
+              <div className="font-semibold">
+                第 {w.week} 週（{w.cases} 件） - {w.date}
+              </div>
               <div>
                 本週分配 → A:{w.allocations.A} B:{w.allocations.B} C:{w.allocations.C}
               </div>
